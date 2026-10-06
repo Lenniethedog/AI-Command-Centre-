@@ -13,6 +13,33 @@ const base = {
   'aria-hidden': true,
 };
 
+/** Hex-radar mark used for brand and the empty-state beacon. */
+export const BrandMark = ({ size = 24 }: { size?: number }): React.JSX.Element => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M16 2.5 28 9.5v13L16 29.5 4 22.5v-13L16 2.5Z"
+      stroke="var(--accent)"
+      strokeWidth="1.6"
+      opacity="0.9"
+    />
+    <path
+      d="M16 7.5 23.5 12v8L16 24.5 8.5 20v-8L16 7.5Z"
+      stroke="var(--accent-2)"
+      strokeWidth="1.2"
+      opacity="0.75"
+    />
+    <circle cx="16" cy="16" r="3.2" fill="var(--accent)" />
+    <circle cx="16" cy="16" r="6.5" stroke="var(--accent)" strokeWidth="1" opacity="0.45" />
+    <path d="M16 9.5v4M16 18.5v4M9.5 16h4M18.5 16h4" stroke="var(--accent)" strokeWidth="1.1" />
+  </svg>
+);
+
 export const SidebarIcon = (): React.JSX.Element => (
   <svg {...base}>
     <rect x="3" y="4" width="18" height="16" rx="2.5" />

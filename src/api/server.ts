@@ -38,6 +38,8 @@ const SettingsBody = z.object({
 });
 
 const HEARTBEAT_MS = 25_000;
+const STARTED_AT = new Date().toISOString();
+const STARTED_MS = Date.now();
 
 interface LoadedModel {
   model: string;
@@ -92,14 +94,22 @@ export function createServer(app: App): FastifyInstance {
     });
   });
 
+  // Bound to loopback in v1, but still refuse to be casually framed or sniffed.
+  server.addHook('onSend', async (_request, reply, payload) => {
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'DENY');
+    reply.header('Referrer-Policy', 'no-referrer');
+    reply.header('Cache-Control', reply.getHeader('Cache-Control') ?? 'no-store');
+    return payload;
+  });
+
   // --- status ---------------------------------------------------------------
 
   server.get('/api/health', async () => {
-    const registered = app.registry.listProviders();
     // What the runtime currently holds in memory. Best-effort: an unreachable
     // runtime reports nothing rather than failing the whole health check.
     const loaded = await loadedModels(app.config.local.baseUrl);
-    const localAvailable = app.providerStatus.some((p) => p.id === 'local' && p.available);
+    const anyAvailable = app.providerStatus.some((p) => p.available);
     const paidEnabled = app.providerStatus.some((p) => p.paid && p.available);
 
     return {
@@ -110,13 +120,18 @@ export function createServer(app: App): FastifyInstance {
       enabledModels: app.config.enabledModels,
       agents: app.registry.listAgents().map((a) => ({ id: a.id, purpose: a.purpose })),
       tools: app.tools.list(),
-      inferenceReady: localAvailable || registered.length > 0,
+      // Ready only when at least one provider can actually serve a model —
+      // registration alone used to flip this true while Ollama was offline.
+      inferenceReady: anyAvailable,
       /** True when nothing metered is in play. The default state. */
       zeroCost: !paidEnabled,
       usage: app.store.usageTotals(),
       concurrency: app.config.maxConcurrentTasks,
       contextTokens: app.config.local.contextTokens,
       loaded,
+      startedAt: STARTED_AT,
+      uptimeSeconds: Math.floor((Date.now() - STARTED_MS) / 1000),
+      version: '0.1.0',
     };
   });
 
@@ -273,13 +288,15 @@ export function createServer(app: App): FastifyInstance {
 
   server.patch<{ Params: { id: string }; Body: { pinned?: boolean } }>(
     '/api/memory/:id',
-    async (request) => {
+    async (request, reply) => {
+      if (!app.store.getMemory(request.params.id)) return fail(reply, 404, 'Memory entry not found');
       app.store.setMemoryPinned(request.params.id, request.body?.pinned === true);
       return { ok: true };
     },
   );
 
-  server.delete<{ Params: { id: string } }>('/api/memory/:id', async (request) => {
+  server.delete<{ Params: { id: string } }>('/api/memory/:id', async (request, reply) => {
+    if (!app.store.getMemory(request.params.id)) return fail(reply, 404, 'Memory entry not found');
     app.store.deleteMemory(request.params.id);
     return { ok: true };
   });

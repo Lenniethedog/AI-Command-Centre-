@@ -78,17 +78,49 @@ export const pinMemory = async (id: string, pinned: boolean): Promise<void> => {
   });
 };
 
-/** Live activity stream. Returns an unsubscribe function. */
+/**
+ * Live activity stream with reconnect.
+ *
+ * EventSource reconnects on its own for most drops, but a hard close (proxy
+ * restart, sleep) leaves the UI silent. We reopen with backoff so a brief
+ * outage does not require a full page reload.
+ */
 export function subscribeToEvents(onEvent: (event: RunEvent) => void): () => void {
-  const source = new EventSource('/api/stream');
-  source.onmessage = (message) => {
-    try {
-      onEvent(JSON.parse(message.data) as RunEvent);
-    } catch {
-      // Ignore malformed frames; the store remains the source of truth.
-    }
+  let source: EventSource | null = null;
+  let closed = false;
+  let attempt = 0;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const connect = (): void => {
+    if (closed) return;
+    source = new EventSource('/api/stream');
+    source.onopen = () => {
+      attempt = 0;
+    };
+    source.onmessage = (message) => {
+      try {
+        onEvent(JSON.parse(message.data) as RunEvent);
+      } catch {
+        // Ignore malformed frames; the store remains the source of truth.
+      }
+    };
+    source.onerror = () => {
+      source?.close();
+      source = null;
+      if (closed) return;
+      const delay = Math.min(1000 * 2 ** attempt, 15_000);
+      attempt += 1;
+      timer = setTimeout(connect, delay);
+    };
   };
-  return () => source.close();
+
+  connect();
+
+  return () => {
+    closed = true;
+    if (timer) clearTimeout(timer);
+    source?.close();
+  };
 }
 
 export const getSettings = async (): Promise<Settings> =>

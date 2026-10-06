@@ -10,7 +10,10 @@ function systemPrefersDark(): boolean {
 
 function read(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return stored === 'light' || stored === 'dark' ? stored : 'system';
+  // First visit lands on dark — the designed surface for a command plane.
+  // Explicit "system" or "light" choices are still honoured once set.
+  if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+  return 'dark';
 }
 
 /**

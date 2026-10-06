@@ -672,6 +672,11 @@ export class Store {
     return rows.map(toMemory);
   }
 
+  getMemory(id: string): MemoryEntry | null {
+    const row = this.#db.prepare('SELECT * FROM memory WHERE id = ?').get(id) as Row | undefined;
+    return row ? toMemory(row) : null;
+  }
+
   setMemoryPinned(id: string, pinned: boolean): void {
     this.#db.prepare('UPDATE memory SET pinned = ? WHERE id = ?').run(pinned ? 1 : 0, id);
   }

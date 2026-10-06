@@ -22,8 +22,8 @@ import { ActivityFeed } from './components/ActivityFeed';
 import { Composer } from './components/Composer';
 import { MissionPanel } from './components/MissionPanel';
 import { UsageView } from './components/UsageView';
-import { Block, EmptyState, Pill, relative } from './components/primitives';
-import { MoonIcon, PlusIcon, SidebarIcon, SunIcon, TrashIcon } from './components/icons';
+import { Block, EmptyState, Fact, Pill, relative } from './components/primitives';
+import { BrandMark, MoonIcon, PlusIcon, SidebarIcon, SunIcon, TrashIcon } from './components/icons';
 import { useTheme } from './theme';
 import type {
   Health,
@@ -245,8 +245,13 @@ export function App(): React.JSX.Element {
       <aside className={`sidebar ${railOpen ? '' : 'sidebar--collapsed'}`}>
         <div className="sidebar__top">
           <div className="brand">
-            <span className="brand__mark" aria-hidden="true" />
-            <span className="brand__name">Command Centre</span>
+            <span className="brand__mark" aria-hidden="true">
+              <BrandMark size={28} />
+            </span>
+            <span className="brand__text">
+              <span className="brand__name">Command Centre</span>
+              <span className="brand__tag">local · £0</span>
+            </span>
           </div>
           <button
             type="button"
@@ -393,18 +398,28 @@ export function App(): React.JSX.Element {
                 <MissionPanel detail={detail} onRemember={(c) => void onRemember(c)} />
               ) : (
                 <div className="welcome">
+                  <div className="welcome__beacon" aria-hidden="true">
+                    <span className="welcome__ring" />
+                    <BrandMark size={72} />
+                  </div>
+                  <p className="welcome__eyebrow">AI Command Centre</p>
                   <h1 className="welcome__title">
                     {activeProject && activeProject.id !== 'prj_general'
                       ? activeProject.name
-                      : 'What should we work on?'}
+                      : 'State an objective'}
                   </h1>
                   <p className="welcome__sub">
                     {(activeProject && activeProject.id !== 'prj_general'
                       ? activeProject.brief.trim()
                       : '') ||
-                      'An objective becomes a mission — planned, run across agents, and synthesised into one recommendation. Entirely on this machine.'}
+                      'It becomes a mission — planned, run across agents, and synthesised into one recommendation. Entirely on this machine.'}
                   </p>
-
+                  <div className="welcome__hints">
+                    <span className="welcome__hint">⌘K focus</span>
+                    <span className="welcome__hint">⌘B rail</span>
+                    <span className="welcome__hint">local inference</span>
+                    <span className="welcome__hint">artifacts on disk</span>
+                  </div>
                 </div>
               ))}
 
@@ -459,6 +474,21 @@ export function App(): React.JSX.Element {
 
             {view === 'settings' && health && (
               <>
+                <Block label="Runtime">
+                  <div className="facts">
+                    <Fact label="Version">{health.version ?? '0.1.0'}</Fact>
+                    <Fact label="Uptime">
+                      {typeof health.uptimeSeconds === 'number'
+                        ? health.uptimeSeconds < 60
+                          ? `${health.uptimeSeconds}s`
+                          : `${Math.floor(health.uptimeSeconds / 60)}m`
+                        : '—'}
+                    </Fact>
+                    <Fact label="Concurrency">{health.concurrency}</Fact>
+                    <Fact label="Context">{health.contextTokens.toLocaleString('en-GB')} tok</Fact>
+                  </div>
+                </Block>
+
                 <Block label="Providers">
                   <ul className="statuses">
                     {health.providers.map((provider) => (
@@ -523,8 +553,9 @@ export function App(): React.JSX.Element {
                     ))}
                   </ul>
                   <p className="muted">
-                    Tools are registered and permission-checked; only <code>read</code> tools may
-                    run without approval. Agents do not yet invoke tools autonomously.
+                    Agents invoke tools through a gather-then-answer loop. <code>read</code> and
+                    sandboxed <code>write</code> tools are allowed; <code>consequential</code> tools
+                    stay denied until approvals exist.
                   </p>
                 </Block>
               </>

@@ -163,6 +163,9 @@ export interface Health {
   concurrency: number;
   contextTokens: number;
   loaded?: { model: string; sizeGb: string }[];
+  startedAt?: string;
+  uptimeSeconds?: number;
+  version?: string;
 }
 
 export interface ModelInfo {
