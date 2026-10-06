@@ -1,0 +1,23 @@
+{
+  "enabled": [
+    {
+      "provider": "local",
+      "model": "qwen3:14b"
+    },
+    {
+      "provider": "local",
+      "model": "qwen3:8b"
+    },
+    {
+      "provider": "local",
+      "model": "llama3.1:8b"
+    }
+  ],
+  "roles": {
+    "reasoning": {
+      "provider": "local",
+      "model": "qwen3:14b"
+    }
+  },
+  "maxTokens": 4096
+}

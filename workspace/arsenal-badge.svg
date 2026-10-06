@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Shield with curves -->
+  <path d="M20 20 L180 20 L160 180 L100 160 L40 180 Z" fill="#003366"/>
+
+  <!-- Crossed sword and rifle at the top -->
+  <line x1="80" y1="40" x2="120" y2="80" stroke="#FFD700" stroke-width="10"/>
+  <line x1="120" y1="40" x2="80" y2="80" stroke="#FFD700" stroke-width="10"/>
+
+  <!-- Gear or cog in the middle -->
+  <circle cx="100" cy="100" r="20" fill="#003366"/>
+  <path d="M100 80 L110 90 L100 100 L90 90 L100 80" fill="#FFD700"/>
+  <path d="M100 120 L110 110 L100 100 L90 110 L100 120" fill="#FFD700"/>
+
+  <!-- Text at the bottom -->
+  <text x="100" y="170" font-family="Arial" font-size="20" fill="#FFFFFF" text-anchor="middle">Strength Through Unity</text>
+
+  <!-- Border or frame -->
+  <rect x="10" y="10" width="180" height="180" fill="none" stroke="#C0C0C0" stroke-width="10"/>
+</svg>

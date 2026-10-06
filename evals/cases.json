@@ -1,0 +1,96 @@
+{
+  "cases": [
+    {
+      "id": "heat-pump-barriers",
+      "objective": "What are the main practical barriers to installing a heat pump in a Victorian terraced house in the UK?",
+      "topics": {
+        "insulation": ["insulat", "draught", "thermal", "fabric", "heat loss"],
+        "space": ["space", "room", "garden", "outdoor unit", "footprint"],
+        "emitters": ["radiator", "pipework", "underfloor", "emitter", "flow temperature"],
+        "electrical": ["electric", "wiring", "supply", "consumer unit", "phase"],
+        "cost": ["cost", "expensive", "price", "capital", "£", "grant"],
+        "planning": ["planning", "conservation", "listed", "permission", "heritage"]
+      },
+      "minTasks": 2
+    },
+    {
+      "id": "sqlite-vs-postgres",
+      "objective": "Compare SQLite and Postgres for a single-operator, local-first desktop application.",
+      "topics": {
+        "operations": ["ops", "server", "daemon", "install", "maintenance", "zero-config", "embedded"],
+        "concurrency": ["concurren", "writer", "lock", "wal", "parallel"],
+        "scale": ["scale", "size", "large", "dataset", "growth"],
+        "features": ["extension", "type", "json", "full-text", "feature"],
+        "fit": ["single", "local", "desktop", "one user", "offline"]
+      },
+      "minTasks": 2
+    },
+    {
+      "id": "lead-gen-risks",
+      "objective": "Explain the main risks of building an AI lead-generation business for UK heating companies.",
+      "topics": {
+        "dataprotection": ["gdpr", "data protection", "privacy", "pecr", "consent"],
+        "competition": ["competit", "saturat", "incumbent", "rival", "market share"],
+        "quality": ["lead quality", "accuracy", "false", "bias", "data quality"],
+        "acquisition": ["acquisition", "customer", "sales", "churn", "adoption"],
+        "regulation": ["regulat", "compliance", "certif", "mcs", "standard"]
+      },
+      "minTasks": 2
+    },
+    {
+      "id": "short-factual",
+      "objective": "Name the three most common refrigerants used in domestic air-source heat pumps and why each is used.",
+      "topics": {
+        "named": ["r32", "r290", "propane", "r410a", "r134a", "co2", "r744"],
+        "reasoning": ["gwp", "global warming", "efficiency", "flammab", "pressure", "environment"]
+      },
+      "minTasks": 2
+    },
+    {
+      "id": "arsenal-badge",
+      "objective": "Make an SVG badge for Arsenal Football Club.",
+      "topics": {
+        "colours": ["red", "white"],
+        "sourced": ["wikipedia", "http", "arsenal.com", "looked up", "source"]
+      },
+      "minTasks": 1,
+      "artifact": {
+        "extension": ".svg",
+        "facts": {
+          "club-red": ["#ef0107", "#e00", "#dc0714", "#d00", "fill=\"red\"", "fill:red"],
+          "white": ["#fff", "white"],
+          "club-name": ["arsenal"],
+          "motto": ["victoria concordia crescit"]
+        },
+        "forbidden": {
+          "invented-motto": ["north london's finest", "north londons finest"]
+        },
+        "requireLookup": true
+      }
+    },
+    {
+      "id": "generation-intensity-csv",
+      "objective": "Create a CSV comparing the typical lifecycle carbon intensity of UK electricity generation sources, with one row per source and a column for grams of CO2 equivalent per kWh.",
+      "topics": {
+        "sources": ["wind", "solar", "nuclear", "gas", "coal"],
+        "units": ["gco2", "g co2", "co2e", "per kwh", "/kwh"]
+      },
+      "minTasks": 1,
+      "artifact": {
+        "extension": ".csv",
+        "facts": {
+          "header": ["source", "technology", "generation"],
+          "units-column": ["gco2", "g co2", "co2e", "gco₂"],
+          "wind": ["wind"],
+          "solar": ["solar", "photovoltaic", "pv"],
+          "nuclear": ["nuclear"],
+          "fossil": ["gas", "ccgt", "coal"]
+        },
+        "forbidden": {
+          "placeholder-values": ["tbd", "xxx", "n/a", "todo", "<value>"]
+        },
+        "requireLookup": true
+      }
+    }
+  ]
+}
