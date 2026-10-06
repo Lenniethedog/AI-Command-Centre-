@@ -20,9 +20,10 @@ import {
 } from './api';
 import { ActivityFeed } from './components/ActivityFeed';
 import { Composer } from './components/Composer';
+import { MemoryGraph } from './components/MemoryGraph';
 import { MissionPanel } from './components/MissionPanel';
 import { UsageView } from './components/UsageView';
-import { Block, EmptyState, Fact, Pill, relative } from './components/primitives';
+import { Block, Fact, Pill, relative } from './components/primitives';
 import { BrandMark, MoonIcon, PlusIcon, SidebarIcon, SunIcon, TrashIcon } from './components/icons';
 import { useTheme } from './theme';
 import type {
@@ -384,7 +385,7 @@ export function App(): React.JSX.Element {
         </header>
 
         <div className="stream">
-          <div className={`column ${view === 'settings' || view === 'usage' ? 'column--wide' : ''}`}>
+          <div className={`column ${view === 'settings' || view === 'usage' || view === 'memory' ? 'column--wide' : ''}`}>
             {!ready && health && (
               <div className="notice">
                 <strong>Local inference is unavailable.</strong> Start the runtime with{' '}
@@ -432,45 +433,24 @@ export function App(): React.JSX.Element {
             {view === 'usage' && usage && <UsageView usage={usage} />}
 
             {view === 'memory' && (
-              <Block label={`Memory — ${activeProject?.name ?? 'General'}`}>
-                <p className="muted">
-                  Completed missions keep short interest notes and key points here
-                  automatically, so later work starts with what you already care about.
-                  You can still pin or forget anything.
-                </p>
-                {memory.length === 0 ? (
-                  <EmptyState
-                    title="No memory kept yet"
-                    hint="Run a mission — interests and key points are kept automatically."
+              <div className="memory-view">
+                <Block
+                  label={`Memory constellation — ${activeProject?.name ?? 'General'}`}
+                >
+                  <p className="muted">
+                    Kept notes become nodes. Shared topics link them. Select a hex to pin or
+                    forget — what stays here still feeds later missions.
+                  </p>
+                  <MemoryGraph
+                    entries={memory}
+                    projectName={activeProject?.name ?? 'General'}
+                    onPin={(id, pinned) =>
+                      void pinMemory(id, pinned).then(() => refreshMemory(projectId))
+                    }
+                    onForget={(id) => void deleteMemory(id).then(() => refreshMemory(projectId))}
                   />
-                ) : (
-                  <ul className="memory">
-                    {memory.map((entry) => (
-                      <li key={entry.id} className={entry.pinned ? 'memory--pinned' : ''}>
-                        <span>{entry.content}</span>
-                        <span className="memory__actions">
-                          <button
-                            type="button"
-                            className="link"
-                            onClick={() =>
-                              void pinMemory(entry.id, !entry.pinned).then(() => refreshMemory(projectId))
-                            }
-                          >
-                            {entry.pinned ? 'unpin' : 'pin'}
-                          </button>
-                          <button
-                            type="button"
-                            className="link link--danger"
-                            onClick={() => void deleteMemory(entry.id).then(() => refreshMemory(projectId))}
-                          >
-                            forget
-                          </button>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Block>
+                </Block>
+              </div>
             )}
 
             {view === 'settings' && health && (
