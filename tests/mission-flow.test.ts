@@ -13,6 +13,7 @@ describe('mission pipeline — objective to recommendation', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const submitted = h.orchestrator.submit(OBJECTIVE);
     assert.equal(submitted.status, 'created');
     await h.orchestrator.drain();
@@ -53,6 +54,7 @@ describe('mission pipeline — objective to recommendation', () => {
     });
 
     await h.orchestrator.drain();
+    h.store.setSetting('effort', 'balanced');
     h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -72,6 +74,7 @@ describe('mission pipeline — objective to recommendation', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -82,6 +85,7 @@ describe('mission pipeline — objective to recommendation', () => {
 
   it('survives a process restart with the full record intact', async () => {
     const first = createHarness();
+    first.store.setSetting('effort', 'balanced');
     const mission = first.orchestrator.submit(OBJECTIVE);
     await first.orchestrator.drain();
     const before = first.store.getMissionDetail(mission.id)!;
@@ -102,6 +106,53 @@ describe('mission pipeline — objective to recommendation', () => {
   });
 });
 
+
+describe('instant effort — one step, no planning tax', () => {
+  it('answers with a single analyst call and skips planner and synthesiser models', async () => {
+    const h = createHarness();
+    after(() => {
+      h.close();
+      h.cleanup();
+    });
+
+    // Factory default after migration 004.
+    assert.equal(h.store.getPreferences().effort, 'instant');
+
+    const mission = h.orchestrator.submit('What is the capital of France?');
+    await h.orchestrator.drain();
+
+    const detail = h.store.getMissionDetail(mission.id)!;
+    assert.equal(detail.mission.status, 'completed');
+    assert.equal(detail.tasks.length, 1);
+    assert.equal(detail.tasks[0]!.agentId, 'analyst');
+    assert.equal(detail.modelCalls.length, 1);
+    assert.equal(h.provider.calls.length, 1);
+    assert.equal(h.provider.calls[0]!.outputSchema?.name, 'analyst_output');
+
+    const result = detail.mission.result as { recommendation: string; keyPoints: string[] };
+    assert.match(result.recommendation, /scripted assessment/i);
+    assert.ok(result.keyPoints.length >= 1);
+  });
+
+  it('keeps interest notes and key points in project memory automatically', async () => {
+    const h = createHarness();
+    after(() => {
+      h.close();
+      h.cleanup();
+    });
+
+    h.orchestrator.submit('Compare heat pumps for a Victorian terrace');
+    await h.orchestrator.drain();
+
+    const memory = h.store.listMemory('prj_general');
+    assert.ok(memory.length >= 1, 'something was retained');
+    assert.ok(
+      memory.some((m) => /Interest:/i.test(m.content) || /consideration/i.test(m.content)),
+      'interest or key points landed in memory',
+    );
+  });
+});
+
 describe('mission pipeline — failure handling', () => {
   it('fails the mission when planning cannot produce a valid plan', async () => {
     const h = createHarness({ replies: { mission_plan: '{"summary":"no tasks","tasks":[]}' } });
@@ -110,6 +161,7 @@ describe('mission pipeline — failure handling', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -147,6 +199,7 @@ describe('mission pipeline — failure handling', () => {
       return original(req);
     };
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -189,6 +242,7 @@ describe('mission pipeline — failure handling', () => {
       return original(req);
     };
 
+    h.store.setSetting('effort', 'balanced');
     await h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -208,6 +262,7 @@ describe('mission pipeline — failure handling', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -225,6 +280,7 @@ describe('mission pipeline — failure handling', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -274,6 +330,7 @@ describe('planner output is repaired before it can create work', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -299,6 +356,7 @@ describe('planner output is repaired before it can create work', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit(OBJECTIVE);
     await h.orchestrator.drain();
 
@@ -350,6 +408,7 @@ describe('stopping and deleting missions', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit('objective');
     await h.orchestrator.drain();
 
@@ -365,6 +424,7 @@ describe('stopping and deleting missions', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit('objective to delete');
     await h.orchestrator.drain();
     assert.ok(h.store.getMissionDetail(mission.id)!.events.length > 0);
@@ -384,6 +444,7 @@ describe('stopping and deleting missions', () => {
       h.cleanup();
     });
 
+    h.store.setSetting('effort', 'balanced');
     const mission = h.orchestrator.submit('objective');
     await h.orchestrator.drain();
     h.store.addMemory('prj_general', 'A fact worth keeping', mission.id);
@@ -391,9 +452,11 @@ describe('stopping and deleting missions', () => {
     h.store.deleteMission(mission.id);
 
     const kept = h.store.listMemory('prj_general');
-    assert.equal(kept.length, 1, 'kept knowledge survives the run that produced it');
-    assert.equal(kept[0]!.content, 'A fact worth keeping');
-    assert.equal(kept[0]!.sourceMissionId, null, 'provenance link cleared');
+    const promoted = kept.find((m) => m.content === 'A fact worth keeping');
+    assert.ok(promoted, 'kept knowledge survives the run that produced it');
+    assert.equal(promoted.sourceMissionId, null, 'provenance link cleared');
+    // Auto-retained interest notes from the mission also survive without a link.
+    assert.ok(kept.every((m) => m.sourceMissionId === null));
   });
 
   it('reports false when deleting something that is not there', () => {

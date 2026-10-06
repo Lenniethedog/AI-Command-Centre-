@@ -61,26 +61,26 @@ export const EFFORT_PROFILES: readonly EffortProfile[] = [
   {
     id: 'instant',
     label: 'Instant',
-    description: 'No reasoning pass, short answers. Best for quick lookups.',
+    description: 'One step, no planning pass. Fast answers for ordinary questions.',
     thinking: false,
     maxTokens: 1024,
-    typicalSeconds: '~2s',
+    typicalSeconds: '~3s',
   },
   {
     id: 'balanced',
     label: 'Balanced',
-    description: 'No reasoning pass, room for a full answer. The default.',
+    description: 'Light plan, fewer tasks. Use when Instant is too thin.',
     thinking: false,
     maxTokens: 4096,
-    typicalSeconds: '~5s',
+    typicalSeconds: '~10s',
   },
   {
     id: 'careful',
     label: 'Careful',
-    description: 'Runs a reasoning pass before answering. Noticeably slower.',
+    description: 'Reasoning pass before answering. Noticeably slower.',
     thinking: true,
     maxTokens: 4096,
-    typicalSeconds: '~15s',
+    typicalSeconds: '~20s',
   },
   {
     id: 'deep',
@@ -88,12 +88,12 @@ export const EFFORT_PROFILES: readonly EffortProfile[] = [
     description: 'Reasoning pass with a large budget for long, involved work.',
     thinking: true,
     maxTokens: 8192,
-    typicalSeconds: '~30s',
+    typicalSeconds: '~40s',
   },
 ];
 
 export function effortProfile(effort: Effort): EffortProfile {
-  return EFFORT_PROFILES.find((p) => p.id === effort) ?? EFFORT_PROFILES[1]!;
+  return EFFORT_PROFILES.find((p) => p.id === effort) ?? EFFORT_PROFILES[0]!;
 }
 
 export interface ModelDescriptor {

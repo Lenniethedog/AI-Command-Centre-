@@ -434,13 +434,14 @@ export function App(): React.JSX.Element {
             {view === 'memory' && (
               <Block label={`Memory — ${activeProject?.name ?? 'General'}`}>
                 <p className="muted">
-                  Nothing is remembered automatically. Findings appear here only when you keep
-                  them, and are given to agents working in this project.
+                  Completed missions keep short interest notes and key points here
+                  automatically, so later work starts with what you already care about.
+                  You can still pin or forget anything.
                 </p>
                 {memory.length === 0 ? (
                   <EmptyState
                     title="No memory kept yet"
-                    hint="Use “remember” on a recommendation’s key points."
+                    hint="Run a mission — interests and key points are kept automatically."
                   />
                 ) : (
                   <ul className="memory">

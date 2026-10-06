@@ -107,7 +107,9 @@ agent's context. Archiving and richer project views are not built.
 
 **M9 Memory — partial.** Operator-controlled memory works: findings are kept
 only when promoted, can be pinned or forgotten, and are supplied to agents in
-that project. Retrieval is recency-ordered; there is no semantic search.
+that project. Completed missions also retain a short interest trail plus key
+points automatically (capped, deduplicated, forgettable). Retrieval is
+recency-ordered; there is no semantic search.
 
 **M5 Multi-model orchestration — mostly complete.** Three local models across
 two families are routable. `config/models.json` is an allowlist that also

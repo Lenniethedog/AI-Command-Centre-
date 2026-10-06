@@ -156,7 +156,7 @@ export function Composer({
         <p className="dock__hint">
           {running
             ? 'Running locally — stop any time, completed steps are kept'
-            : 'Runs locally on your machine · £0 · ⏎ to start, ⇧⏎ for a new line'}
+            : 'Instant by default · runs locally · £0 · ⏎ to start, ⇧⏎ for a new line'}
         </p>
       </div>
     </div>

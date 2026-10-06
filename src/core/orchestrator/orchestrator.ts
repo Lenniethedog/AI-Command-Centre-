@@ -5,6 +5,12 @@ import type { Registry } from '../registry/registry.js';
 import type { Store } from '../store/repository.js';
 import type { TaskExecutor } from './executor.js';
 import type { Scheduler } from './scheduler.js';
+import {
+  liftWorkerResult,
+  retainMissionMemory,
+  wantsArtifact,
+  type LiftedResult,
+} from './fast-path.js';
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -33,6 +39,8 @@ export interface OrchestratorAgents {
   synthesiser: string;
   /** Used when the planner names an agent that does not exist. */
   fallbackWorker: string;
+  /** Optional maker id for Instant artifact objectives. */
+  maker?: string;
 }
 
 export interface OrchestratorDeps {
@@ -49,9 +57,8 @@ export interface OrchestratorDeps {
  *
  *   objective → plan → tasks (dependency graph) → synthesis → result
  *
- * Deterministic code owns every state transition. Models are called at three
- * defined points — planning, each task, synthesis — and each returns validated
- * structured data. No model decides what happens next.
+ * Instant effort short-circuits to a single worker with no planner or
+ * synthesiser model call — deterministic code still owns every transition.
  *
  * Every stage is a real task row, so the whole pipeline is visible, timed and
  * attributable rather than hidden inside the orchestrator.
@@ -117,7 +124,16 @@ export class Orchestrator {
     const stopped = (): boolean =>
       signal.aborted || store.getMission(mission.id)?.status === 'cancelled';
 
+    const prefs = { model: mission.modelPref, effort: mission.effort, signal };
+
     try {
+      // Instant: one worker, no planner/synthesiser model calls. Balanced and
+      // above still plan — but a one-task plan skips the synthesiser too.
+      if (mission.effort === 'instant') {
+        await this.#runInstant(mission, prefs, stopped);
+        return;
+      }
+
       // --- 1. plan ---------------------------------------------------------
       store.setMissionStatus(mission.id, 'planning', {
         type: 'mission.planning',
@@ -133,7 +149,6 @@ export class Orchestrator {
         },
       ]);
 
-      const prefs = { model: mission.modelPref, effort: mission.effort, signal };
       const rawPlan = await executor.run(planTask!, mission.projectId, prefs);
       if (stopped()) return;
       const plan = this.#normalisePlan(rawPlan);
@@ -165,6 +180,21 @@ export class Orchestrator {
         return;
       }
 
+      // One planned worker already answered — lift it instead of paying for
+      // another full model pass that mostly restates the same findings.
+      // Only when the plan asked for a single step (not when siblings failed).
+      if (completed.length === 1 && workTasks.length === 1) {
+        const only = completed[0]!;
+        store.setMissionStatus(mission.id, 'synthesising', {
+          type: 'mission.synthesising',
+          message: 'Lifting the single finding into a recommendation',
+        });
+        const result = liftWorkerResult(only.output);
+        if (stopped()) return;
+        this.#finish(mission, result);
+        return;
+      }
+
       // --- 3. synthesise ---------------------------------------------------
       store.setMissionStatus(mission.id, 'synthesising', {
         type: 'mission.synthesising',
@@ -191,7 +221,7 @@ export class Orchestrator {
       const result = await executor.run(synthesisTask!, mission.projectId, prefs);
 
       if (stopped()) return;
-      store.completeMission(mission.id, result);
+      this.#finish(mission, result as LiftedResult);
     } catch (err) {
       // A stopped mission is already in its final state; an abort error is the
       // expected consequence of stopping, not a failure to report.
@@ -205,6 +235,64 @@ export class Orchestrator {
       }
       store.failMission(mission.id, message);
     }
+  }
+
+  /**
+   * Instant effort: skip the planner and synthesiser models. One worker runs
+   * the objective directly; deterministic code lifts its output into the
+   * recommendation the interface expects.
+   */
+  async #runInstant(
+    mission: Mission,
+    prefs: { model: string; effort: Mission['effort']; signal: AbortSignal },
+    stopped: () => boolean,
+  ): Promise<void> {
+    const { store, executor, agents, registry } = this.#deps;
+
+    const makerId = agents.maker;
+    const useMaker =
+      !!makerId &&
+      wantsArtifact(mission.objective) &&
+      registry.listAgents().some((a) => a.id === makerId);
+    const workerId = useMaker ? makerId! : agents.fallbackWorker;
+
+    const plan: MissionPlan = {
+      summary: 'Instant effort — answered in one step without a planning pass.',
+      tasks: [
+        {
+          title: useMaker ? 'Produce the deliverable' : 'Answer the objective',
+          instruction: mission.objective,
+          agentId: workerId,
+          dependsOn: [],
+        },
+      ],
+    };
+
+    store.setMissionStatus(mission.id, 'planning', {
+      type: 'mission.planning',
+      message: 'Instant effort — skipping the planner',
+    });
+    store.saveMissionPlan(mission.id, plan);
+
+    store.setMissionStatus(mission.id, 'running');
+    const [workTask] = store.createTasksFromPlan(mission.id, plan.tasks, { positionOffset: 0 });
+    store.markTaskReady(workTask!.id);
+    const output = await executor.run(workTask!, mission.projectId, prefs);
+    if (stopped()) return;
+
+    store.setMissionStatus(mission.id, 'synthesising', {
+      type: 'mission.synthesising',
+      message: 'Instant effort — lifting the answer',
+    });
+    const result = liftWorkerResult(output);
+    if (stopped()) return;
+    this.#finish(mission, result);
+  }
+
+  #finish(mission: Mission, result: LiftedResult): void {
+    const { store } = this.#deps;
+    store.completeMission(mission.id, result);
+    retainMissionMemory(store, mission.projectId, mission.id, mission.objective, result);
   }
 
   /**

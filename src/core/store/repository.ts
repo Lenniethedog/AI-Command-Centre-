@@ -246,7 +246,7 @@ export class Store {
   createMission(
     projectId: string,
     objective: string,
-    prefs: { model: string; effort: Effort } = { model: 'auto', effort: 'balanced' },
+    prefs: { model: string; effort: Effort } = { model: 'auto', effort: 'instant' },
   ): Mission {
     return this.#commit(() => {
       const id = newId('msn');
@@ -644,7 +644,7 @@ export class Store {
   getPreferences(): { model: string; effort: Effort } {
     return {
       model: this.getSetting('model', 'auto'),
-      effort: this.getSetting('effort', 'balanced') as Effort,
+      effort: this.getSetting('effort', 'instant') as Effort,
     };
   }
 

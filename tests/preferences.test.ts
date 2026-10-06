@@ -26,8 +26,8 @@ describe('effort profiles map to knobs that actually work', () => {
     assert.ok(deep!.maxTokens > careful!.maxTokens);
   });
 
-  it('falls back to balanced for an unknown level', () => {
-    assert.equal(effortProfile('nonsense' as never).id, 'balanced');
+  it('falls back to instant for an unknown level', () => {
+    assert.equal(effortProfile('nonsense' as never).id, 'instant');
   });
 });
 
@@ -210,7 +210,7 @@ describe('preferences are captured onto the mission', () => {
     );
   });
 
-  it('defaults to balanced when nothing has been chosen', async () => {
+  it('defaults to instant when nothing has been chosen', async () => {
     const h = createHarness();
     after(() => {
       h.close();
@@ -219,7 +219,7 @@ describe('preferences are captured onto the mission', () => {
 
     const mission = h.orchestrator.submit('objective three');
     await h.orchestrator.drain();
-    assert.equal(h.store.getMission(mission.id)!.effort, 'balanced');
+    assert.equal(h.store.getMission(mission.id)!.effort, 'instant');
   });
 
   it('round-trips settings through the store', () => {
@@ -229,7 +229,7 @@ describe('preferences are captured onto the mission', () => {
       h.cleanup();
     });
 
-    assert.deepEqual(h.store.getPreferences(), { model: 'auto', effort: 'balanced' });
+    assert.deepEqual(h.store.getPreferences(), { model: 'auto', effort: 'instant' });
     h.store.setSetting('model', 'qwen3:14b');
     h.store.setSetting('effort', 'careful');
     assert.deepEqual(h.store.getPreferences(), { model: 'qwen3:14b', effort: 'careful' });

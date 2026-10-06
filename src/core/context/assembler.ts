@@ -6,8 +6,9 @@ import type { Store } from '../store/repository.js';
  * Assembles what an agent is allowed to know.
  *
  * Deterministic code, not a model call, so what any agent saw is always
- * reconstructable after the fact. Memory is included only where the operator
- * deliberately kept it — nothing is auto-remembered.
+ * reconstructable after the fact. Completed missions also contribute short
+ * interest notes and key points automatically; the operator can still forget
+ * anything from the Memory panel.
  */
 
 /** Keeps a small local context window from being spent on history. */
@@ -76,7 +77,7 @@ export function renderContext(context: ContextBundle): string {
 
   if (context.memory.length > 0) {
     sections.push(
-      `Known facts the operator has kept for this project:\n${context.memory
+      `Known facts for this project (kept from earlier missions):\n${context.memory
         .map((m) => `- ${m}`)
         .join('\n')}`,
     );

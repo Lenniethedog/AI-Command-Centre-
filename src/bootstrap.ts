@@ -183,6 +183,7 @@ export async function bootstrap(config: AppConfig): Promise<App> {
       planner: PLANNER_AGENT_ID,
       synthesiser: SYNTHESISER_AGENT_ID,
       fallbackWorker: ANALYST_AGENT_ID,
+      maker: MAKER_AGENT_ID,
     },
     defaultProjectId: DEFAULT_PROJECT_ID,
   });
