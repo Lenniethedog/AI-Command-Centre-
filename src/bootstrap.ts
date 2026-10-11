@@ -21,6 +21,7 @@ import { createPlannerAgent, PLANNER_AGENT_ID } from './agents/planner/index.js'
 import { SYNTHESISER_AGENT_ID, synthesiserAgent } from './agents/synthesiser/index.js';
 import { createAnthropicProvider } from './providers/anthropic/index.js';
 import { createLocalProvider, LOCAL_PROVIDER_ID } from './providers/local/index.js';
+import { createNvidiaProvider, NVIDIA_PROVIDER_ID } from './providers/nvidia/index.js';
 import { createWebFetchTool } from './tools/web-fetch/index.js';
 import { createWebSearchTool } from './tools/web-search/index.js';
 import { createWikiSearchTool } from './tools/wiki-search/index.js';
@@ -37,6 +38,8 @@ export interface ProviderStatus {
   /** Why it is unavailable, in words the operator can act on. */
   detail: string;
   paid: boolean;
+  /** Whether prompts leave this machine when the provider is used. */
+  remote: boolean;
 }
 
 export interface App {
@@ -108,6 +111,7 @@ export async function bootstrap(config: AppConfig): Promise<App> {
       id: LOCAL_PROVIDER_ID,
       available: local.models.length > 0,
       paid: false,
+      remote: false,
       detail:
         local.models.length > 0
           ? `${local.models.length} model(s) installed`
@@ -118,6 +122,7 @@ export async function bootstrap(config: AppConfig): Promise<App> {
       id: LOCAL_PROVIDER_ID,
       available: false,
       paid: false,
+      remote: false,
       detail: err instanceof Error ? err.message : String(err),
     });
   }
@@ -129,6 +134,7 @@ export async function bootstrap(config: AppConfig): Promise<App> {
       id: 'anthropic',
       available: true,
       paid: true,
+      remote: true,
       detail: 'enabled by ANTHROPIC_API_KEY — this provider is metered',
     });
   } else {
@@ -136,7 +142,36 @@ export async function bootstrap(config: AppConfig): Promise<App> {
       id: 'anthropic',
       available: false,
       paid: true,
+      remote: true,
       detail: 'not configured (optional — the system does not require it)',
+    });
+  }
+
+  // Free to use but not local: prompts go to NVIDIA, under trial terms that
+  // allow evaluation rather than production use.
+  if (config.nvidia.apiKey) {
+    registry.registerProvider(
+      createNvidiaProvider({
+        apiKey: config.nvidia.apiKey,
+        requestTimeoutMs: config.nvidia.requestTimeoutMs,
+        contextTokens: config.nvidia.contextTokens,
+      }),
+    );
+    providerStatus.push({
+      id: NVIDIA_PROVIDER_ID,
+      available: true,
+      paid: false,
+      remote: true,
+      detail:
+        'enabled by NVIDIA_API_KEY — free trial; prompts leave this machine, so send no personal or confidential data',
+    });
+  } else {
+    providerStatus.push({
+      id: NVIDIA_PROVIDER_ID,
+      available: false,
+      paid: false,
+      remote: true,
+      detail: 'not configured (optional — set NVIDIA_API_KEY to use GLM-5.3 and Kimi K3)',
     });
   }
 
@@ -152,11 +187,18 @@ export async function bootstrap(config: AppConfig): Promise<App> {
   const missing = config.enabledModels.filter((entry) => !installed(entry));
 
   for (const entry of missing) {
+    const registered = registry.listProviders().some((p) => p.id === entry.provider);
     providerStatus.push({
       id: `${entry.provider}/${entry.model}`,
       available: false,
       paid: false,
-      detail: `allowed by config but not installed — run: ollama pull ${entry.model}`,
+      remote: entry.provider !== LOCAL_PROVIDER_ID,
+      detail:
+        entry.provider === LOCAL_PROVIDER_ID
+          ? `allowed by config but not installed — run: ollama pull ${entry.model}`
+          : registered
+            ? 'allowed by config but not offered by this provider'
+            : `allowed by config; its provider (${entry.provider}) is not configured`,
     });
   }
 

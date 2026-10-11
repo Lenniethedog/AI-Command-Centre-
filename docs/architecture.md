@@ -363,6 +363,19 @@ the deployment cannot honour is routing on a lie.
 Routing policy lives in a config file (preferred model per capability tier,
 fallback order), so changing which model does what is a config edit.
 
+**A preferred tier is a preference, not a requirement.** An agent may declare
+`preferReasoning` above its `reasoning` floor. The planner and synthesiser
+prefer `strong`: when the operator has left model choice on Auto and a
+configured model offers that tier, they get it; otherwise routing proceeds
+exactly as if the field were absent. Local-only, no model reaches `strong`, so
+nothing changes — the £0 path is untouched by construction. An explicit model
+choice always wins, so a mission set to a local model never reaches a cloud one.
+
+**The allowlist can be machine-specific.** `config/models.local.json`, when
+present, replaces `config/models.json`. It is gitignored: the shipped allowlist
+stays local-only (a test enforces it), and enabling a cloud model is a decision
+taken on one machine rather than committed for every checkout.
+
 ---
 
 ## Tools and side effects
@@ -539,6 +552,10 @@ what the tool contract is for.
   findings, and project context are sent to a third party only if the operator
   has deliberately enabled a cloud provider. Any future feature that would send
   operator data off-machine must be opt-in and must say so plainly.
+- **Free is not the same as local.** Provider status carries `remote`
+  separately from `paid`. NVIDIA's free trial costs nothing, yet planning and
+  synthesis prompts leave the machine when it is enabled, so the interface
+  stops claiming "£0 · local" and says which steps go to the cloud.
 - **API keys live in the environment** when a cloud provider *is* enabled,
   loaded at startup, never written to the database and never included in
   `run_event` payloads. Log redaction is applied at the store boundary so it
@@ -656,3 +673,7 @@ budget enforcement (spend is tracked, not capped), multi-user access.
 ---
 
 Last updated: 2026-09-05
+| 2026-10-11 | **NVIDIA's free trial as an optional cloud provider (GLM-5.3, Kimi K3), over `fetch`** | Two open-weight frontier models at no charge, reached through an OpenAI-compatible endpoint with `fetch`, so no SDK or npm dependency. Registered only when `NVIDIA_API_KEY` is set. Structured output is requested as JSON with the schema stated in the prompt; whether the endpoint enforces the schema is undocumented for these models, so agent-side Zod validation remains the check | The `openai` SDK (a dependency for a single POST); paid providers for the same models (cost); a local 70B+ model (does not fit this machine) |
+| 2026-10-11 | **`preferReasoning`: a soft tier preference, used only on Auto** | Planning and synthesis gain most from a stronger model, analysis and making less. A hard `strong` requirement would make missions fail without a cloud key — a defect by principle 0 — so the stronger tier is preferred, never required, and an explicit model choice always wins | Raising the planner's `reasoning` floor (breaks the local path); naming cloud models per agent (names in routing) |
+| 2026-10-11 | **Machine-specific `config/models.local.json`, gitignored** | Keeps the shipped allowlist local-only while letting one machine opt in to cloud models and list the local models it actually has installed | Editing the shipped allowlist (enables cloud for every checkout); environment-variable model lists (a second allowlist format) |
+

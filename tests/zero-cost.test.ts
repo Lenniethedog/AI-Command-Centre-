@@ -39,7 +39,10 @@ function stubLocalRuntime(): void {
   }) as typeof fetch;
 }
 
-function configWithout(keys: { anthropic?: string | undefined }): { config: AppConfig; dir: string } {
+function configWithout(keys: {
+  anthropic?: string | undefined;
+  nvidia?: string | undefined;
+}): { config: AppConfig; dir: string } {
   const dir = mkdtempSync(join(tmpdir(), 'acc-zero-'));
   return {
     dir,
@@ -48,7 +51,11 @@ function configWithout(keys: { anthropic?: string | undefined }): { config: AppC
       port: 0,
       dbFile: join(dir, 'test.db'),
       migrationsDir: join(PROJECT_ROOT, 'migrations'),
-      enabledModels: [{ provider: 'local', model: 'local-test:8b' }],
+      enabledModels: [
+        { provider: 'local', model: 'local-test:8b' },
+        // Allowed but inert unless NVIDIA_API_KEY is set: the provider is never registered.
+        { provider: 'nvidia', model: 'z-ai/glm-5.3' },
+      ],
       reasoningModel: undefined,
       maxTokens: 2048,
       maxConcurrentTasks: 2,
@@ -61,6 +68,8 @@ function configWithout(keys: { anthropic?: string | undefined }): { config: AppC
       },
       searxngUrl: undefined,
       anthropicApiKey: keys.anthropic,
+      nvidia: { apiKey: keys.nvidia, requestTimeoutMs: 5_000, contextTokens: 131_072 },
+      modelsFile: 'config/models.json',
     },
   };
 }
@@ -153,5 +162,40 @@ describe('£0 guarantee — the system is fully functional with no credentials',
       b.registry.listProviders().some((p) => p.id === 'anthropic'),
       'present only when the operator supplies a credential',
     );
+  });
+
+  it('keeps NVIDIA opt-in, and marks it free but not local', async () => {
+    stubLocalRuntime();
+    const withoutKey = configWithout({ nvidia: undefined });
+    const a = await bootstrap(withoutKey.config);
+    const withKey = configWithout({ nvidia: 'nvapi-test-key-not-a-real-credential' });
+    const b = await bootstrap(withKey.config);
+    after(() => {
+      a.close();
+      b.close();
+      rmSync(withoutKey.dir, { recursive: true, force: true });
+      rmSync(withKey.dir, { recursive: true, force: true });
+    });
+
+    assert.ok(!a.registry.listProviders().some((p) => p.id === 'nvidia'), 'absent by default');
+    assert.deepEqual(
+      a.routableModels.map((m) => m.provider),
+      ['local'],
+      'an allowed cloud model is not routable without its key',
+    );
+    // Without a key, a preferred stronger tier finds nothing and routing falls
+    // back to the local model exactly as before.
+    assert.equal(a.router.tryResolve({ reasoning: 'strong', structuredOutput: true }), null);
+
+    const status = b.providerStatus.find((p) => p.id === 'nvidia')!;
+    assert.equal(status.available, true);
+    assert.equal(status.paid, false, 'the trial is not billed');
+    assert.equal(status.remote, true, 'prompts leave the machine');
+    assert.equal(
+      b.router.tryResolve({ reasoning: 'strong', structuredOutput: true })?.modelId,
+      'z-ai/glm-5.3',
+    );
+    // The default, for work with no preference, is still the local model.
+    assert.equal(b.router.resolve({ reasoning: 'basic', structuredOutput: true }).providerId, 'local');
   });
 });

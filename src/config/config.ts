@@ -52,6 +52,10 @@ export interface AppConfig {
   searxngUrl: string | undefined;
   /** Optional. Absent means the adapter is simply not registered. */
   anthropicApiKey: string | undefined;
+  /** Optional NVIDIA free-trial key. Absent means the adapter is not registered. */
+  nvidia: { apiKey: string | undefined; requestTimeoutMs: number; contextTokens: number };
+  /** Which allowlist file was loaded, for the interface and diagnostics. */
+  modelsFile: string;
 }
 
 function int(value: string | undefined, fallback: number): number {
@@ -63,7 +67,11 @@ export function loadConfig(): AppConfig {
   const envFile = `${PROJECT_ROOT}.env`;
   if (existsSync(envFile)) process.loadEnvFile(envFile);
 
-  const modelsPath = `${PROJECT_ROOT}config/models.json`;
+  // A machine-specific allowlist, when present, replaces the shipped one. It is
+  // gitignored: the shipped config/models.json stays local-only, and enabling a
+  // cloud model is a decision made on one machine, never committed for all.
+  const localModels = `${PROJECT_ROOT}config/models.local.json`;
+  const modelsPath = existsSync(localModels) ? localModels : `${PROJECT_ROOT}config/models.json`;
   const models = ModelsFile.parse(JSON.parse(readFileSync(modelsPath, 'utf8')));
 
   return {
@@ -91,5 +99,12 @@ export function loadConfig(): AppConfig {
     workspaceRoot: join(PROJECT_ROOT, 'workspace'),
     searxngUrl: process.env.SEARXNG_URL?.trim() || undefined,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY?.trim() || undefined,
+    nvidia: {
+      apiKey: process.env.NVIDIA_API_KEY?.trim() || undefined,
+      // Both cloud models reason before answering; a deep pass can take minutes.
+      requestTimeoutMs: int(process.env.NVIDIA_TIMEOUT_MS, 300_000),
+      contextTokens: int(process.env.NVIDIA_CONTEXT_TOKENS, 131_072),
+    },
+    modelsFile: modelsPath.replace(PROJECT_ROOT, ''),
   };
 }

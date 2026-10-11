@@ -111,6 +111,7 @@ export function createServer(app: App): FastifyInstance {
     const loaded = await loadedModels(app.config.local.baseUrl);
     const anyAvailable = app.providerStatus.some((p) => p.available);
     const paidEnabled = app.providerStatus.some((p) => p.paid && p.available);
+    const remoteEnabled = app.providerStatus.some((p) => p.remote && p.available);
 
     return {
       ok: true,
@@ -125,6 +126,9 @@ export function createServer(app: App): FastifyInstance {
       inferenceReady: anyAvailable,
       /** True when nothing metered is in play. The default state. */
       zeroCost: !paidEnabled,
+      /** True when no configured provider sends prompts off this machine. */
+      localOnly: !remoteEnabled,
+      modelsFile: app.config.modelsFile,
       usage: app.store.usageTotals(),
       concurrency: app.config.maxConcurrentTasks,
       contextTokens: app.config.local.contextTokens,

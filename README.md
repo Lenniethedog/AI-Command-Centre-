@@ -93,6 +93,41 @@ router; with no key set, it simply is not registered and the system runs
 entirely locally. Keys are read from the environment, never written to the
 database, and redacted at the store boundary so they cannot reach the event log.
 
+#### Free cloud models: GLM-5.3 and Kimi K3 on NVIDIA
+
+NVIDIA's free evaluation API hosts two open-weight frontier models: Z.ai's
+GLM-5.3 (faster) and Moonshot AI's Kimi K3. To use them:
+
+1. Create a key at <https://build.nvidia.com/settings/api-keys> and add
+   `NVIDIA_API_KEY=nvapi-…` to `.env`.
+2. List the models after your local ones in `config/models.local.json`. That
+   file is gitignored and replaces `config/models.json` on this machine:
+
+   ```json
+   {
+     "enabled": [
+       { "provider": "local", "model": "qwen3.5:latest" },
+       { "provider": "nvidia", "model": "z-ai/glm-5.3" },
+       { "provider": "nvidia", "model": "moonshotai/kimi-k3" }
+     ],
+     "roles": { "reasoning": { "provider": "local", "model": "qwen3.5:latest" } },
+     "maxTokens": 4096
+   }
+   ```
+
+3. Restart the Command Centre.
+
+On missions left on **Auto** at Balanced, Careful or Deep effort, planning and
+synthesis then run on the first listed cloud model, while analysis and making
+stay local. Instant missions stay entirely local. To keep a mission entirely on
+this machine, pick a local model for it. You can also pick GLM-5.3 or Kimi K3 to
+run the whole mission in the cloud.
+
+The trial is free, but it is **not local**. Prompts for those steps go to
+NVIDIA, whose trial terms allow evaluation rather than production use and
+forbid personal or confidential data. The interface shows "£0 · cloud on" while
+it is enabled.
+
 ## Run
 
 **From the desktop.** Double-click **AI Command Centre** on your Desktop. It
@@ -173,7 +208,9 @@ network access.
 ## Cost and privacy
 
 **Default spend is £0 and default data egress is none.** Inference runs locally,
-so no request leaves the machine and nothing is metered. A paid provider becomes
+so no request leaves the machine and nothing is metered. The optional NVIDIA
+provider is free but not local: when you enable it, planning and synthesis
+prompts leave the machine, and the interface says so. A paid provider becomes
 involved only when you set a key for one — and if the system ever cannot
 complete a mission without a cloud provider, that is a defect, not a
 configuration step.

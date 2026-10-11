@@ -141,6 +141,8 @@ export interface ProviderStatus {
   available: boolean;
   detail: string;
   paid: boolean;
+  /** Whether prompts leave this machine when the provider is used. */
+  remote: boolean;
 }
 
 export interface Health {
@@ -159,6 +161,9 @@ export interface Health {
   tools: { id: string; description: string; sideEffect: string }[];
   inferenceReady: boolean;
   zeroCost: boolean;
+  /** False once a cloud provider is enabled, even a free one. */
+  localOnly: boolean;
+  modelsFile: string;
   usage: { missions: number; modelCalls: number; tokensIn: number; tokensOut: number };
   concurrency: number;
   contextTokens: number;

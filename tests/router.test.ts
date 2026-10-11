@@ -71,6 +71,21 @@ describe('capability-based routing', () => {
     assert.equal(resolved.providerId, 'vendor-b');
   });
 
+  it('tryResolve returns null rather than throwing when nothing qualifies', () => {
+    const weak = createScriptedProvider({
+      id: 'weak',
+      descriptors: [
+        {
+          id: 'weak-model',
+          capabilities: { reasoning: 'basic', contextTokens: 200_000, structuredOutput: true, thinking: true },
+        },
+      ],
+    });
+    const router = routerWith([weak], [{ provider: 'weak', model: 'weak-model' }]);
+    assert.equal(router.tryResolve({ reasoning: 'strong' }), null);
+    assert.equal(router.tryResolve({ reasoning: 'basic' })?.modelId, 'weak-model');
+  });
+
   it('skips a configured provider that is not registered (e.g. no API key)', () => {
     const router = routerWith([], [{ provider: 'anthropic', model: 'claude-opus-5' }]);
     assert.throws(() => router.resolve({ reasoning: 'strong' }), NoModelAvailableError);

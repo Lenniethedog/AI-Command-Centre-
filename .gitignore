@@ -5,3 +5,6 @@ data/
 *.log
 .DS_Store
 evals/results/
+
+# Machine-specific model allowlist; replaces config/models.json when present.
+config/models.local.json

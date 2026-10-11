@@ -1397,6 +1397,7 @@ h1, h2, h3, h4 {
 }
 .badge--free { color: var(--status-completed); border-color: color-mix(in srgb, var(--status-completed) 35%, transparent); }
 .badge--paid { color: var(--status-running); }
+.badge--remote { color: var(--status-running); }
 .badge--read { color: var(--status-completed); }
 .badge--write { color: var(--status-running); }
 .badge--consequential { color: var(--status-failed); }

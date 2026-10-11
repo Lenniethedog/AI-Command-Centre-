@@ -251,7 +251,10 @@ export function App(): React.JSX.Element {
             </span>
             <span className="brand__text">
               <span className="brand__name">Command Centre</span>
-              <span className="brand__tag">local · £0</span>
+              <span className="brand__tag">
+                {health?.localOnly === false ? 'local + cloud' : 'local'}
+                {health?.zeroCost === false ? '' : ' · £0'}
+              </span>
             </span>
           </div>
           <button
@@ -371,7 +374,18 @@ export function App(): React.JSX.Element {
           </nav>
 
           <div className="header__right">
-            {health?.zeroCost && <span className="chipstat">£0 · local</span>}
+            {health?.zeroCost && (
+              <span
+                className="chipstat"
+                title={
+                  health.localOnly
+                    ? 'Everything runs on this machine'
+                    : 'A free cloud provider is enabled; some prompts leave this machine'
+                }
+              >
+                {health.localOnly ? '£0 · local' : '£0 · cloud on'}
+              </span>
+            )}
             <button
               type="button"
               className="iconbtn"
@@ -479,14 +493,24 @@ export function App(): React.JSX.Element {
                         <span className={`badge ${provider.paid ? 'badge--paid' : 'badge--free'}`}>
                           {provider.paid ? 'paid' : 'free'}
                         </span>
+                        {provider.remote && <span className="badge badge--remote">cloud</span>}
                         <span className="muted">{provider.detail}</span>
                       </li>
                     ))}
                   </ul>
-                  <p className="muted">
-                    Cloud providers are optional. With none configured the Command Centre runs
-                    entirely on local models at £0 and nothing leaves this machine.
-                  </p>
+                  {health.localOnly ? (
+                    <p className="muted">
+                      Cloud providers are optional. With none configured the Command Centre runs
+                      entirely on local models at £0 and nothing leaves this machine.
+                    </p>
+                  ) : (
+                    <p className="muted">
+                      A cloud provider is enabled. On Balanced, Careful and Deep missions left on
+                      Auto, planning and synthesis use it and their prompts leave this machine;
+                      Instant missions and analysis stay local. Choose a local model for a mission
+                      to keep all of it here. Model allowlist: {health.modelsFile}.
+                    </p>
+                  )}
                 </Block>
 
                 <Block label="Models available">

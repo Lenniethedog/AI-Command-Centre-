@@ -39,6 +39,8 @@ export interface HarnessOptions extends ScriptedOptions {
   policy?: PermissionPolicy;
   extraTools?: Tool[];
   concurrency?: number;
+  /** Further providers, routable after the main one in this order. */
+  extraProviders?: ScriptedProvider[];
 }
 
 /** Builds the real pipeline on a temporary database, with a scripted provider. */
@@ -58,6 +60,7 @@ export function createHarness(options: HarnessOptions = {}, existingDir?: string
 
   const registry = new Registry();
   registry.registerProvider(provider);
+  for (const extra of options.extraProviders ?? []) registry.registerProvider(extra);
   registry.registerAgent(analystAgent);
   registry.registerAgent(synthesiserAgent);
   registry.registerAgent(
@@ -69,6 +72,7 @@ export function createHarness(options: HarnessOptions = {}, existingDir?: string
 
   const router = new ModelRouter(registry, [
     { provider: provider.id, model: provider.models[0]!.id },
+    ...(options.extraProviders ?? []).map((p) => ({ provider: p.id, model: p.models[0]!.id })),
   ]);
   const executor = new TaskExecutor({
     registry,

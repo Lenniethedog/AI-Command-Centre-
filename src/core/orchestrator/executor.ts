@@ -1,4 +1,4 @@
-import { effortProfile } from '../domain/contracts.js';
+import { effortProfile, meetsTier } from '../domain/contracts.js';
 import type {
   AgentContext,
   BoundModel,
@@ -34,6 +34,9 @@ const PERMANENT_FAILURES = new Set([
   'ToolPermissionDeniedError',
   'LocalModelNotInstalledError',
   'NoModelAvailableError',
+  // Optional cloud adapter: a rejected key or a retired model will not recover.
+  'CloudKeyRejectedError',
+  'CloudModelUnavailableError',
 ]);
 
 function isRetryable(err: unknown): boolean {
@@ -90,7 +93,26 @@ export class TaskExecutor {
       : agent.modelRequirement;
     const preferred = needsThinking ? (this.#deps.reasoningModel ?? prefs.model) : prefs.model;
 
-    const resolution = router.resolve(requirement, preferred);
+    // Work that benefits from a stronger model gets one when it is configured
+    // and the operator left model choice on auto. An explicit choice always
+    // wins, so a mission set to a local model never reaches a cloud one.
+    const auto = !prefs.model || prefs.model === 'auto';
+    const preferredTier = agent.modelRequirement.preferReasoning;
+    const stronger =
+      auto && preferredTier && !meetsTier(requirement.reasoning, preferredTier)
+        ? router.tryResolve({ ...requirement, reasoning: preferredTier })
+        : null;
+    if (stronger) {
+      store.appendEvent(
+        task.missionId,
+        task.id,
+        'model.selected',
+        `Stronger model preferred for this work — routed to ${stronger.modelId}`,
+        { used: stronger.modelId, tier: preferredTier, reason: 'preferred-tier' },
+      );
+    }
+
+    const resolution = stronger ?? router.resolve(requirement, preferred);
 
     if (needsThinking && this.#deps.reasoningModel && prefs.model && prefs.model !== 'auto' && prefs.model !== this.#deps.reasoningModel) {
       store.appendEvent(

@@ -27,7 +27,10 @@ log, permission-aware tool infrastructure, **agent-invoked tool use** over four
 one `write` tool (`workspace.write`), **produced artifacts** written to the
 sandboxed workspace and rendered in the interface, mission stop and delete,
 usage reporting, an evaluation harness, and local-first inference at £0 across
-three models in two families.
+three models in two families. **Optional cloud models (2026-10-11):** an NVIDIA
+free-trial adapter (GLM-5.3, Kimi K3) registered only with `NVIDIA_API_KEY`;
+on Auto, the planner and synthesiser prefer it via `preferReasoning`, and
+everything else stays local. Free is not local: the interface says so.
 
 **Deliberately not built:** critics/verification, approvals, monitoring,
 automation, external integrations, authentication. `consequential` tools stay
@@ -154,7 +157,12 @@ registered, and the system runs on Wikipedia alone. It must never become a
 precondition for starting.
 
 **Optional cloud SDKs:** `@anthropic-ai/sdk` (installed) and `openai` (not
-installed). Both are optional adapters. Never make them required.
+installed). Both are optional adapters. Never make them required. The NVIDIA
+adapter (`src/providers/nvidia`) uses `fetch` and needs no SDK.
+
+**Model allowlist:** `config/models.json` is shipped and must stay local-only.
+`config/models.local.json` (gitignored) replaces it on one machine — that is
+where cloud models are listed.
 
 Python may be introduced later **only** behind a `Tool`/HTTP boundary for
 specialised data analysis. It does not enter the core.
@@ -199,4 +207,4 @@ npm run preview    Serve the built UI
 
 ---
 
-Last updated: 2026-09-05
+Last updated: 2026-10-11

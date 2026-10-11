@@ -116,8 +116,12 @@ two families are routable. `config/models.json` is an allowlist that also
 assigns roles: a named `reasoning` model serves any request needing a reasoning
 pass, so raising effort always reaches a model that can honour it. The operator
 can pick a model per mission; the choice is recorded on the mission. Cost stays
-£0 because every provider in play is local. Not built: automatic per-agent model
-selection (planning still uses the same model as analysis unless effort differs).
+£0 because every provider in play is local. **Per-agent model selection by
+preferred tier (2026-10-11):** the planner and synthesiser prefer a `strong`
+model and get one, on Auto, when the optional NVIDIA provider (GLM-5.3, Kimi
+K3, free trial) is configured; analysis and making stay on the default local
+model. Without a key nothing changes. Not yet measured: no eval has run against
+the cloud models, because none can run without the operator's key.
 
 **`web.fetch` was dead until 2026-09-05.** It had never been called once — not
 in thirty-one tool calls across twenty-seven missions — so every conclusion the

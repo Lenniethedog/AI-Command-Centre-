@@ -64,6 +64,16 @@ export class ModelRouter {
     return { ...resolved, preferenceHonoured: !preferredModelId || preferredModelId === 'auto' };
   }
 
+  /**
+   * The first configured model meeting the requirement, or null — for callers
+   * that have a fallback of their own, such as a preferred tier that may not be
+   * configured at all.
+   */
+  tryResolve(requirement: ModelRequirement): Resolution | null {
+    const resolved = this.#match(requirement, () => true);
+    return resolved ? { ...resolved, preferenceHonoured: true } : null;
+  }
+
   #match(
     requirement: ModelRequirement,
     accept: (entry: EnabledModel) => boolean,

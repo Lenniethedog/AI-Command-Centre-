@@ -58,6 +58,9 @@ export const synthesiserAgent: Agent = {
 
   modelRequirement: {
     reasoning: 'basic',
+    // Planning and synthesis gain most from a stronger model; analysis and
+    // making stay on the default. Local-only, this changes nothing.
+    preferReasoning: 'strong',
     structuredOutput: true,
     minContextTokens: 8_000,
   },

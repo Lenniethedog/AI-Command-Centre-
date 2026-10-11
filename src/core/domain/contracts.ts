@@ -165,6 +165,14 @@ export interface ModelProvider {
  */
 export interface ModelRequirement {
   reasoning: ReasoningTier;
+  /**
+   * A stronger tier this work benefits from, used when a configured model offers
+   * it and the operator has not chosen a model for the mission. It is a
+   * preference, never a requirement: with no such model configured — no cloud
+   * key — routing falls back to `reasoning` exactly as if it were absent, so the
+   * £0 local path is unchanged.
+   */
+  preferReasoning?: ReasoningTier;
   minContextTokens?: number;
   structuredOutput?: boolean;
   /** The task needs a reasoning pass; a model without one cannot serve it. */
